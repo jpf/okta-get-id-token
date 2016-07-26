@@ -1,0 +1,334 @@
+# This is a file written in Emacs and authored using org-mode (http://orgmode.org/)
+# The "README.md" file is generated from this file by running the
+# "M-x org-md-export-to-markdown" command from inside of Emacs.
+# 
+# The rest of the files are generated from this file by running the
+# "M-x org-babel-tangle" command from inside of Emacs.
+# 
+# The options below control the behavior of org-md-export-to-markdown:
+#
+# Don't render a Table of Contents 
+#+OPTIONS: toc:nil
+# Don't render section numbers
+#+OPTIONS: num:nil
+# Turn of subscript parsing: http://super-user.org/wordpress/2012/02/02/how-to-get-rid-of-subscript-annoyance-in-org-mode/comment-page-1/
+#+OPTIONS: ^:{}
+* Introduction
+  =get_id_token.sh= is a Bash [[https://en.wikipedia.org/wiki/Shell_script][shell script]] that will fetch an [[https://en.wikipedia.org/wiki/OpenID_Connect][OpenID
+  Connect]] =id_token= from Okta.
+
+  Below is an example of how =get_id_token.sh= could be used to fetch an
+  =id_token= for a user named "example.user" who is assigned to an Okta
+  application with the =client_id= of "aBCdEf0GhiJkLMno1pq2" in the
+  "example.oktapreview.com" Okta org:
+
+  #+NAME: id_token
+  #+BEGIN_SRC sh :results code :exports results
+    get_id_token.sh -b "https://example.oktapreview.com" -c "aBCdEf0GhiJkLMno1pq2" -u "example.user" -p "Abcdefgh0" -o "https://example.com"
+  #+END_SRC
+
+  Running the command above will return a JWT similar to the one
+  below:
+
+  #+RESULTS: id_token
+  #+BEGIN_SRC sh
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhQkNkRWYwR2hpSmtMTW5vMXBxMiIsInZlciI6MSwiaXNzIjoiaHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g_dj1kUXc0dzlXZ1hjUSIsImlhdCI6MTQ2OTE0MjAxOCwiZXhwIjoxNDY5MTQ1NjE4LCJhdXRoX3RpbWUiOjE0NjkxNDIwMTd9.Tim8_SgPoM01lZ8T5PrYgstDRzU3Yk8qmmLyMO9a19I
+  #+END_SRC
+* Installing
+  This shell script depends on =curl= and =jq= to run. The easiest way
+  to install these dependencies is to use the [[https://nixos.org/nix/][Nix package manager]],
+  which will automatically install these dependencies for you if you
+  run the commands below.
+
+  #+BEGIN_QUOTE
+  Note: While Nix is the easiest way to install the dependencies for
+  this script, Nix will download over 600 [[https://en.wikipedia.org/wiki/Mebibyte][MiB]] of packages to install
+  =curl= and =jq=. If you don't want to use the Nix package manager, you
+  can install =curl= and =jq= using your preferred package manager and
+  then change the interpreter on the first line of =get_id_token.sh=
+  from "=/usr/bin/env nix-shell=" to "=/bin/bash="
+  #+END_QUOTE
+
+  Here is how to install =get_id_token.sh= on your system using the Nix
+  package manager on GNU/Linux or macOS systems:
+
+  1. Install the Nix package manager:
+     #+BEGIN_SRC sh
+       curl https://nixos.org/nix/install | sh
+     #+END_SRC
+  2. Download the =get_id_token.sh= shell script to your system.
+  3. Change to the directory containing the =get_id_token.sh= shell
+     script
+     #+BEGIN_SRC sh
+     cd okta-get-id-token
+     #+END_SRC
+  4. Run the shell script:
+     #+BEGIN_SRC sh
+     ./get_id_token.sh -h
+     #+END_SRC
+* Creating an Okta application for OpenID Connect
+  Follow the steps below if you haven't yet created an Okta
+  application with OpenID Connect support.
+  - Log in to your Okta org as a user with administrator access.
+  - Click on the "Admin" button.
+  - Click on the "Add Applications" link in the right-hand "Shortcuts" sidebar.
+  - Click on the "Create New App" button located on the left-hand side
+    of the Add Application page.
+  - A dialog box will open:
+    - For the purposes of this demonstration, leave "Platform" set to
+      the "Web" option.
+    - Set the "Sign on method" to the "OpenID Connect" option.
+    - Click the "Create" button.
+  - Select a name for your application. Use "get_id_token.sh" if you
+    can't think of a good name.
+  - Click "Next"
+  - For the purposes of this demonstration, enter
+    "https://example.net/your_application" as the Redirect URI.
+  - Click "Finish"
+  - You should now see the "General" tab of the OpenID Connect
+    application that you just created.
+  - Scroll down and copy the "Client ID" for the application that you created.
+  - Click the "People" tab.
+  - Click the "Assign to People" button.
+  - Search for a user to assign to the application.
+  - Click the "Assign" button for the user you want to assign to the application.
+  - Click the "Save and Go Back" button.
+  - Click the "Done" button.
+  
+  Once you have created an Okta application and assigned a user to
+  that application, run the command in the section below to fetch an
+  =id_token= for that user.
+
+* Using
+  
+  Here is an example command that will fetch an =id_token= from Okta.
+  #+BEGIN_SRC sh
+  ./get_id_token.sh -b 'https://example.okta.com' -c aBCdEf0GhiJkLMno1pq2 -u AzureDiamond -p hunter2 -o 'https://example.net/your_application'"
+  #+END_SRC
+  
+  Here are what each of the options do:
+
+  *-b* is the *Base URL* for your Okta org.
+
+  *-c* is the *Client ID* for the Okta application that you created.
+
+  *-u* is the *Username* for a user assigned to the Okta application.
+
+  *-p* is the *Password* for the user.
+
+  *-o* is the *Origin*, one of the white listed URLs allowed to request an
+  =id_token= for the Client ID.
+
+* How it works
+
+  At a high level, the =get_id_token.sh= script does the following:
+
+  1. Initialize runtime dependencies using =nix-shell=
+  2. Parse command line flags
+  3. Fetch a [[http://developer.okta.com/docs/api/resources/sessions#session-token][Session Token]] from Okta via the Okta API
+  4. Request an OpenID Connect =id_token= from the Okta API
+
+
+  Each section is covered in detail below.
+
+** Initializing runtime dependencies using nix-shell
+
+  We start with the [[https://en.wikipedia.org/wiki/Shebang_(Unix)][shebang]] that specifies that this script is to be
+  run using the =nix-shell= - which gives this script the ability to
+  configure its own dependencies automatically via the Nix package
+  manager.
+
+  Also included is a short description of the script and my email address.
+  #+NAME: includes
+  #+BEGIN_SRC sh
+    #! /usr/bin/env nix-shell
+    #! nix-shell -i bash -p curl -p jq
+    # get_id_token.sh
+    # A shell script which demonstrates how to get an OpenID Connect id_token from from Okta using the OAuth 2.0 "Implicit Flow"
+    # Author: Joel Franusic <joel.franusic@okta.com>
+  #+END_SRC
+
+** Parsing command line flags
+  Next we parse the command line flags into local variables. The
+  StackOverflow article on [[http://stackoverflow.com/questions/8175000/parsing-arguments-options-flags-in-a-bash-script][Parsing arguments/options/flags in a bash
+  script]] has more details on parsing command line arguments in a Bash script.
+
+  #+NAME: get-command-line-options
+  #+BEGIN_SRC sh
+    base_url=""
+    client_id=""
+    origin=""
+    username=""
+    password=""
+    verbose=0
+
+    while getopts ":b:c:o:u:p:v" OPTION
+    do
+        case $OPTION in
+        b)
+            base_url="$OPTARG"
+        ;;
+        c)
+            client_id="$OPTARG"
+        ;;
+        o)
+            origin="$OPTARG"
+        ;;
+        u)
+            username="$OPTARG"
+        ;;
+        p)
+            password="$OPTARG"
+        ;;
+        v)
+            verbose=1
+        ;;
+        [?])
+            echo "Usage: $0 -b base_url -c client_id -o origin -u username -p password" >&2
+            echo ""
+            echo "Example:"
+            echo "$0 -b 'https://example.okta.com' -c aBCdEf0GhiJkLMno1pq2 -u AzureDiamond -p hunter2 -o 'https://example.net/your_application'"
+            exit 1
+        ;;
+        esac
+    done
+  #+END_SRC
+
+** Fetching a Session Token from Okta via the Okta API
+  The code below uses =curl= to [[https://en.wikipedia.org/wiki/Percent-encoding][URL encode]] the redirect URL. For
+  example, if our redirect URL is =https://example.com= this code will
+  convert that string into =https%3A%2F%2Fexample.com=
+  
+  #+NAME: urlencode-redirect-url
+  #+BEGIN_SRC sh
+    redirect_uri=$(curl --silent --output /dev/null --write-out %{url_effective} --get --data-urlencode "$origin" "" | cut -d '?' -f 2)
+    if [ $verbose -eq 1 ]; then
+        echo "Redirect URI: '${redirect_uri}'"
+    fi
+  #+END_SRC
+
+  Once we have a properly encoded URL, we construct a =curl= command to
+  fetch an Okta session token from Okta:
+
+  #+NAME: get-okta-session-token
+  #+BEGIN_SRC sh
+    rv=$(curl --silent "${base_url}/api/v1/authn" \
+              -H "Origin: ${origin}" \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json' \
+              --data-binary $(printf '{"username":"%s","password":"%s"}' $username $password) )
+    session_token=$(echo $rv | jq -r .sessionToken )
+  #+END_SRC
+
+  If the =-v= flag was set, we print out some extra debugging information:
+  #+NAME: get-okta-session-token-verbose
+  #+BEGIN_SRC sh
+    if [ $verbose -eq 1 ]; then
+        echo "First curl: '${rv}'"
+    fi
+    if [ $verbose -eq 1 ]; then
+        echo "Session token: '${session_token}'"
+    fi
+  #+END_SRC
+
+** Requesting an OpenID Connect id_token from the Okta API
+
+  Then, using our Okta session token, we construct a =curl= command to
+  make a OAuth 2.0 request to Okta, asking for an =id_token=:
+
+  #+NAME: construct-oauth-url
+  #+BEGIN_SRC sh
+    url=$(printf "%s/oauth2/v1/authorize?sessionToken=%s&client_id=%s&scope=openid+email+groups&response_type=id_token&response_mode=fragment&nonce=%s&redirect_uri=%s&state=%s" \
+          $base_url \
+          $session_token \
+          $client_id \
+          "staticNonce" \
+          $redirect_uri \
+          "staticState")
+  #+END_SRC
+
+  If the =-v= flag was set, we print out some extra debugging information:
+  #+NAME: construct-oauth-url-verbose
+  #+BEGIN_SRC sh
+    if [ $verbose -eq 1 ]; then
+        echo "Here is the URL: '${url}'"
+        # exit
+    fi
+  #+END_SRC
+
+  Then, we run the =curl= command, capturing the return value into a
+  local variable:
+
+  #+NAME: fetch-oauth-url
+  #+BEGIN_SRC sh
+    rv=$(curl --silent -v $url 2>&1)
+  #+END_SRC
+
+  If the =-v= flag was set, we print out some extra debugging
+  information:
+
+  #+NAME: fetch-oauth-url-verbose
+  #+BEGIN_SRC sh
+    if [ $verbose -eq 1 ]; then
+        echo "Here is the return value: "
+        echo $rv
+    fi
+  #+END_SRC
+
+  Finally, we parse out the =id_token= from the output of the =curl=
+  command, and print the value of the =id_token= on standard out:
+
+  #+NAME: print-id-token
+  #+BEGIN_SRC sh
+    id_token=$(echo "$rv" | egrep -o '^< Location: .*id_token=[[:alnum:]_\.\-]*' | cut -d \= -f 2)
+    echo $id_token
+  #+END_SRC
+
+  #+BEGIN_SRC sh :noweb yes :padline no :tangle get_id_token.sh :exports none
+    <<includes>>
+    # 
+    # <<license>>
+
+    curl="curl"
+    jq="jq"
+
+    <<get-command-line-options>>
+
+    <<urlencode-redirect-url>>
+
+    <<get-okta-session-token>>
+    <<get-okta-session-token-verbose>>
+
+    <<construct-oauth-url>>
+    <<construct-oauth-url-verbose>>
+
+    <<fetch-oauth-url>>
+    <<fetch-oauth-url-verbose>>
+
+    <<print-id-token>>
+  #+END_SRC
+* License information
+  #+NAME: license
+  #+BEGIN_SRC text :tangle LICENSE.txt :padline no
+    Copyright © 2016, Okta, Inc.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+  #+END_SRC
+* Commentary							   :noexport:
+** How to specify exact paths to curl and jq:
+  #+BEGIN_SRC sh :exports none
+    export SSL_CERT_FILE=/nix/store/brfzgc99w9zyqj68i14w5jhyybg6j1sf-nss-cacert-3.21/etc/ssl/certs/ca-bundle.crt
+    curl="/nix/store/5w3gjiq7yfsqv3pq4sfjmvxpdpqajrj4-curl-7.47.1-bin/bin/curl"
+    jq="/nix/store/sm8pa9d520qk2rqvnslkldvvy5vx3jqi-jq-1.5/bin/jq"
+  #+END_SRC
+  
