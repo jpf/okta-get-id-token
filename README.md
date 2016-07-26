@@ -31,7 +31,9 @@ package manager on GNU/Linux or macOS systems:
 1.  Install the Nix package manager:
     
         curl https://nixos.org/nix/install | sh
-2.  Download the `get_id_token.sh` shell script to your system.
+2.  Download the `get_id_token.sh` shell script to your system
+    
+        git clone git@github.com:jpf/okta-get-id-token.git
 3.  Change to the directory containing the `get_id_token.sh` shell
     script
     

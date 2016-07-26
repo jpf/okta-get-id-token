@@ -56,7 +56,10 @@
      #+BEGIN_SRC sh
        curl https://nixos.org/nix/install | sh
      #+END_SRC
-  2. Download the =get_id_token.sh= shell script to your system.
+  2. Download the =get_id_token.sh= shell script to your system
+     #+BEGIN_SRC sh
+     git clone git@github.com:jpf/okta-get-id-token.git
+     #+END_SRC
   3. Change to the directory containing the =get_id_token.sh= shell
      script
      #+BEGIN_SRC sh
