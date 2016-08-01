@@ -109,12 +109,10 @@ Each section is covered in detail below.
 
 ## Initializing runtime dependencies using nix-shell
 
-We start with the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) that specifies that this script is to be
-run using the `nix-shell` - which gives this script the ability to
+We start with a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) which specifies that this script is to
+interpreted by `nix-shell` - which gives this script the ability to
 configure its own dependencies automatically via the Nix package
 manager.
-
-Also included is a short description of the script and my email address.
 
     #! /usr/bin/env nix-shell
     #! nix-shell -i bash -p curl -p jq
@@ -173,12 +171,15 @@ example, if our redirect URL is `https://example.com` this code will
 convert that string into `https%3A%2F%2Fexample.com`
 
     redirect_uri=$(curl --silent --output /dev/null --write-out %{url_effective} --get --data-urlencode "$origin" "" | cut -d '?' -f 2)
+
+If the `-v` flag was set, we print out some extra debugging information:
+
     if [ $verbose -eq 1 ]; then
         echo "Redirect URI: '${redirect_uri}'"
     fi
 
 Once we have a properly encoded URL, we construct a `curl` command to
-fetch an Okta session token from Okta:
+fetch an Okta session token from Okta using Okta's [/authn](http://developer.okta.com/docs/api/resources/authn.html#primary-authentication) API endpoint:
 
     rv=$(curl --silent "${base_url}/api/v1/authn" \
               -H "Origin: ${origin}" \
@@ -199,7 +200,10 @@ If the `-v` flag was set, we print out some extra debugging information:
 ## Requesting an OpenID Connect id\_token from the Okta API
 
 Then, using our Okta session token, we construct a `curl` command to
-make a OAuth 2.0 request to Okta, asking for an `id_token`:
+make an [OAuth 2.0 authentication request](http://developer.okta.com/docs/api/resources/oauth2.html#authentication-request) to Okta, asking for an `id_token`:
+
+Note that we are requesting the "openid", "email", and "groups"
+scopes" via the `scopes` query parameter.
 
     url=$(printf "%s/oauth2/v1/authorize?sessionToken=%s&client_id=%s&scope=openid+email+groups&response_type=id_token&response_mode=fragment&nonce=%s&redirect_uri=%s&state=%s" \
           $base_url \
@@ -213,11 +217,10 @@ If the `-v` flag was set, we print out some extra debugging information:
 
     if [ $verbose -eq 1 ]; then
         echo "Here is the URL: '${url}'"
-        # exit
     fi
 
 Then, we run the `curl` command, capturing the return value into a
-local variable:
+local variable named `rv`:
 
     rv=$(curl --silent -v $url 2>&1)
 
@@ -234,6 +237,18 @@ command, and print the value of the `id_token` on standard out:
 
     id_token=$(echo "$rv" | egrep -o '^< Location: .*id_token=[[:alnum:]_\.\-]*' | cut -d \= -f 2)
     echo $id_token
+
+# Dependencies
+
+This script depends on the command line tools listed below. These
+requirements should be automatically included via the `nix-shell`
+directives in the script, but are listed below for the sake of
+completeness.
+
+| Name | Version | Description | License |
+| ---- | --- | --- | --- |
+| [curl](https://curl.haxx.se/) | 7.47.1 | Command line tool for transferring data with URL syntax | [MIT/X](https://curl.haxx.se/docs/copyright.html) |
+| [jq](https://stedolan.github.io/jq/) | 1.5 | A lightweight and flexible command-line JSON processor | [MIT](https://github.com/stedolan/jq/blob/master/COPYING) |
 
 # License information
 

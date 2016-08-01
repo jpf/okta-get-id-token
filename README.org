@@ -136,12 +136,11 @@
 
 ** Initializing runtime dependencies using nix-shell
 
-  We start with the [[https://en.wikipedia.org/wiki/Shebang_(Unix)][shebang]] that specifies that this script is to be
-  run using the =nix-shell= - which gives this script the ability to
+  We start with a [[https://en.wikipedia.org/wiki/Shebang_(Unix)][shebang]] which specifies that this script is to
+  interpreted by =nix-shell= - which gives this script the ability to
   configure its own dependencies automatically via the Nix package
   manager.
 
-  Also included is a short description of the script and my email address.
   #+NAME: includes
   #+BEGIN_SRC sh
     #! /usr/bin/env nix-shell
@@ -205,13 +204,18 @@
   #+NAME: urlencode-redirect-url
   #+BEGIN_SRC sh
     redirect_uri=$(curl --silent --output /dev/null --write-out %{url_effective} --get --data-urlencode "$origin" "" | cut -d '?' -f 2)
+  #+END_SRC
+
+  If the =-v= flag was set, we print out some extra debugging information:
+  #+NAME: urlencode-redirect-url-verbose
+  #+BEGIN_SRC sh
     if [ $verbose -eq 1 ]; then
         echo "Redirect URI: '${redirect_uri}'"
     fi
   #+END_SRC
 
   Once we have a properly encoded URL, we construct a =curl= command to
-  fetch an Okta session token from Okta:
+  fetch an Okta session token from Okta using Okta's [[http://developer.okta.com/docs/api/resources/authn.html#primary-authentication][/authn]] API endpoint:
 
   #+NAME: get-okta-session-token
   #+BEGIN_SRC sh
@@ -233,11 +237,13 @@
         echo "Session token: '${session_token}'"
     fi
   #+END_SRC
-
 ** Requesting an OpenID Connect id_token from the Okta API
 
   Then, using our Okta session token, we construct a =curl= command to
-  make a OAuth 2.0 request to Okta, asking for an =id_token=:
+  make an [[http://developer.okta.com/docs/api/resources/oauth2.html#authentication-request][OAuth 2.0 authentication request]] to Okta, asking for an =id_token=:
+
+  Note that we are requesting the "openid", "email", and "groups"
+  scopes" via the =scopes= query parameter.
 
   #+NAME: construct-oauth-url
   #+BEGIN_SRC sh
@@ -255,12 +261,11 @@
   #+BEGIN_SRC sh
     if [ $verbose -eq 1 ]; then
         echo "Here is the URL: '${url}'"
-        # exit
     fi
   #+END_SRC
 
   Then, we run the =curl= command, capturing the return value into a
-  local variable:
+  local variable named =rv=:
 
   #+NAME: fetch-oauth-url
   #+BEGIN_SRC sh
@@ -298,6 +303,7 @@
     <<get-command-line-options>>
 
     <<urlencode-redirect-url>>
+    <<urlencode-redirect-url-verbose>>
 
     <<get-okta-session-token>>
     <<get-okta-session-token-verbose>>
@@ -310,6 +316,61 @@
 
     <<print-id-token>>
   #+END_SRC
+* Requirements							   :noexport:
+  #+TBLNAME: requirements-table
+  |------+---------+---------------------------------------------------------+--------------------------------+---------+----------------------------------------------------|
+  | name | version | description                                             | url                            | license | license_url                                        |
+  |------+---------+---------------------------------------------------------+--------------------------------+---------+----------------------------------------------------|
+  | curl |  7.47.1 | Command line tool for transferring data with URL syntax | https://curl.haxx.se/          | MIT/X   | https://curl.haxx.se/docs/copyright.html           |
+  | jq   |     1.5 | A lightweight and flexible command-line JSON processor  | https://stedolan.github.io/jq/ | MIT     | https://github.com/stedolan/jq/blob/master/COPYING |
+  |------+---------+---------------------------------------------------------+--------------------------------+---------+----------------------------------------------------|
+** Converting the table to an array of dictionaries
+  The code below is taken verbatim from [[http://stackoverflow.com/a/8414248/3191847][a StackOverflow answer]] by [[http://stackoverflow.com/users/174728/john-la-rooy][John
+  La Rooy]]. This code takes the table above as an array of arrays and
+  returns an array of dictionaries, where the key is the column name
+  and the value is the column content. This array of dictionaries is
+  used below to generate the =requirements.txt= file.
+  #+NAME: table-to-dict
+  #+BEGIN_SRC python :var table=requirements-table :results code :cache yes
+    headers = table[0]
+    values = table[1:]
+
+    from functools import partial
+    from itertools import izip, imap
+    data = map(dict, imap(partial(izip, headers), values))
+
+    return data
+  #+END_SRC
+  #+RESULTS[c1a3c98748c62ccfeae021d3300dc737a972a619]: table-to-dict
+  #+BEGIN_SRC python
+  [{'name': 'curl', 'license': 'MIT/X', 'url': 'https://curl.haxx.se/', 'version': '7.47.1', 'license_url': 'https://curl.haxx.se/docs/copyright.html', 'description': 'Command line tool for transferring data with URL syntax'}, {'name': 'jq', 'license': 'MIT', 'url': 'https://stedolan.github.io/jq/', 'version': 1.5, 'license_url': 'https://github.com/stedolan/jq/blob/master/COPYING', 'description': 'A lightweight and flexible command-line JSON processor'}]
+  #+END_SRC
+
+* Dependencies
+  This script depends on the command line tools listed below. These
+  requirements should be automatically included via the =nix-shell=
+  directives in the script, but are listed below for the sake of
+  completeness.
+
+  #+BEGIN_SRC python :var table=requirements-table :results html :noweb yes :cache yes :exports results
+    data = <<table-to-dict(requirements-table)>>
+    output = "| Name | Version | Description | License |\n"
+    output += "| ---- | --- | --- | --- |\n"
+    for package in data:
+	if not package['name']:
+	    continue
+	output += "| [{name}]({url}) | {version} | {description} | [{license}]({license_url}) |\n".format(**package)
+    return output
+  #+END_SRC
+
+  #+RESULTS[21410f6bab71a6d5ee137e1b250f3cc75f6f161b]:
+  #+BEGIN_HTML
+  | Name | Version | Description | License |
+  | ---- | --- | --- | --- |
+  | [curl](https://curl.haxx.se/) | 7.47.1 | Command line tool for transferring data with URL syntax | [MIT/X](https://curl.haxx.se/docs/copyright.html) |
+  | [jq](https://stedolan.github.io/jq/) | 1.5 | A lightweight and flexible command-line JSON processor | [MIT](https://github.com/stedolan/jq/blob/master/COPYING) |
+  #+END_HTML
+
 * License information
   #+NAME: license
   #+BEGIN_SRC text :tangle LICENSE.txt :padline no

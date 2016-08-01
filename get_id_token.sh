@@ -86,7 +86,6 @@ url=$(printf "%s/oauth2/v1/authorize?sessionToken=%s&client_id=%s&scope=openid+e
       "staticState")
 if [ $verbose -eq 1 ]; then
     echo "Here is the URL: '${url}'"
-    # exit
 fi
 
 rv=$(curl --silent -v $url 2>&1)
