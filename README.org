@@ -22,15 +22,15 @@
   application with the =client_id= of "aBCdEf0GhiJkLMno1pq2" in the
   "example.oktapreview.com" Okta org:
 
-  #+NAME: id_token
-  #+BEGIN_SRC sh :results code :exports results
-    get_id_token.sh -b "https://example.oktapreview.com" -c "aBCdEf0GhiJkLMno1pq2" -u "example.user" -p "Abcdefgh0" -o "https://example.com"
+  #+NAME: example-command
+  #+BEGIN_SRC sh :results code :exports both
+    ./get_id_token.sh -b 'https://example.okta.com' -c aBCdEf0GhiJkLMno1pq2 -u AzureDiamond -p hunter2 -o 'https://example.net/your_application'"
   #+END_SRC
 
   Running the command above will return a JWT similar to the one
   below:
 
-  #+RESULTS: id_token
+  #+NAME: id_token
   #+BEGIN_SRC sh
     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhQkNkRWYwR2hpSmtMTW5vMXBxMiIsInZlciI6MSwiaXNzIjoiaHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g_dj1kUXc0dzlXZ1hjUSIsImlhdCI6MTQ2OTE0MjAxOCwiZXhwIjoxNDY5MTQ1NjE4LCJhdXRoX3RpbWUiOjE0NjkxNDIwMTd9.Tim8_SgPoM01lZ8T5PrYgstDRzU3Yk8qmmLyMO9a19I
   #+END_SRC
@@ -104,9 +104,10 @@
 
 * Using
   
-  Here is an example command that will fetch an =id_token= from Okta.
-  #+BEGIN_SRC sh
-  ./get_id_token.sh -b 'https://example.okta.com' -c aBCdEf0GhiJkLMno1pq2 -u AzureDiamond -p hunter2 -o 'https://example.net/your_application'"
+  Here is an example command that will fetch an =id_token= from Okta:
+
+  #+BEGIN_SRC sh :noweb yes
+  <<example-command>>
   #+END_SRC
   
   Here are what each of the options do:
@@ -137,8 +138,8 @@
 ** Initializing runtime dependencies using nix-shell
 
   We start with a [[https://en.wikipedia.org/wiki/Shebang_(Unix)][shebang]] which specifies that this script is to
-  interpreted by =nix-shell= - which gives this script the ability to
-  configure its own dependencies automatically via the Nix package
+  interpreted by =nix-shell=, this gives the script the ability to
+  automatically configure its own dependencies via the Nix package
   manager.
 
   #+NAME: includes
@@ -150,12 +151,15 @@
     # Author: Joel Franusic <joel.franusic@okta.com>
   #+END_SRC
 
-** Parsing command line flags
-  Next we parse the command line flags into local variables. The
-  StackOverflow article on [[http://stackoverflow.com/questions/8175000/parsing-arguments-options-flags-in-a-bash-script][Parsing arguments/options/flags in a bash
-  script]] has more details on parsing command line arguments in a Bash script.
+** Parsing command line arguments
+  Next we parse the command line arguments into local variables. The
+  StackOverflow article on [[http://stackoverflow.com/questions/8175000/parsing-arguments-options-flags-in-a-bash-script][parsing arguments in a bash script]] has more
+  details on parsing command line arguments in a Bash script.
 
-  #+NAME: get-command-line-options
+  We start by initializing the variables for the command line
+  parameters:
+
+  #+NAME: initialize-options
   #+BEGIN_SRC sh
     base_url=""
     client_id=""
@@ -163,7 +167,12 @@
     username=""
     password=""
     verbose=0
+  #+END_SRC
 
+  Then, we use =getopts= go parse our command line arguments for us:
+
+  #+NAME: get-command-line-options
+  #+BEGIN_SRC sh :noweb yes
     while getopts ":b:c:o:u:p:v" OPTION
     do
         case $OPTION in
@@ -299,6 +308,8 @@
 
     curl="curl"
     jq="jq"
+
+    <<initialize-options>>
 
     <<get-command-line-options>>
 

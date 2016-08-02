@@ -8,8 +8,13 @@ Below is an example of how `get_id_token.sh` could be used to fetch an
 application with the `client_id` of "aBCdEf0GhiJkLMno1pq2" in the
 "example.oktapreview.com" Okta org:
 
+    ./get_id_token.sh -b 'https://example.okta.com' -c aBCdEf0GhiJkLMno1pq2 -u AzureDiamond -p hunter2 -o 'https://example.net/your_application'"
+
+
 Running the command above will return a JWT similar to the one
 below:
+
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhQkNkRWYwR2hpSmtMTW5vMXBxMiIsInZlciI6MSwiaXNzIjoiaHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g_dj1kUXc0dzlXZ1hjUSIsImlhdCI6MTQ2OTE0MjAxOCwiZXhwIjoxNDY5MTQ1NjE4LCJhdXRoX3RpbWUiOjE0NjkxNDIwMTd9.Tim8_SgPoM01lZ8T5PrYgstDRzU3Yk8qmmLyMO9a19I
 
 # Installing
 
@@ -79,7 +84,7 @@ that application, run the command in the section below to fetch an
 
 # Using
 
-Here is an example command that will fetch an `id_token` from Okta.
+Here is an example command that will fetch an `id_token` from Okta:
 
     ./get_id_token.sh -b 'https://example.okta.com' -c aBCdEf0GhiJkLMno1pq2 -u AzureDiamond -p hunter2 -o 'https://example.net/your_application'"
 
@@ -110,8 +115,8 @@ Each section is covered in detail below.
 ## Initializing runtime dependencies using nix-shell
 
 We start with a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) which specifies that this script is to
-interpreted by `nix-shell` - which gives this script the ability to
-configure its own dependencies automatically via the Nix package
+interpreted by `nix-shell`, this gives the script the ability to
+automatically configure its own dependencies via the Nix package
 manager.
 
     #! /usr/bin/env nix-shell
@@ -120,11 +125,14 @@ manager.
     # A shell script which demonstrates how to get an OpenID Connect id_token from from Okta using the OAuth 2.0 "Implicit Flow"
     # Author: Joel Franusic <joel.franusic@okta.com>
 
-## Parsing command line flags
+## Parsing command line arguments
 
-Next we parse the command line flags into local variables. The
-StackOverflow article on [Parsing arguments/options/flags in a bash
-script](http://stackoverflow.com/questions/8175000/parsing-arguments-options-flags-in-a-bash-script) has more details on parsing command line arguments in a Bash script.
+Next we parse the command line arguments into local variables. The
+StackOverflow article on [parsing arguments in a bash script](http://stackoverflow.com/questions/8175000/parsing-arguments-options-flags-in-a-bash-script) has more
+details on parsing command line arguments in a Bash script.
+
+We start by initializing the variables for the command line
+parameters:
 
     base_url=""
     client_id=""
@@ -132,7 +140,9 @@ script](http://stackoverflow.com/questions/8175000/parsing-arguments-options-fla
     username=""
     password=""
     verbose=0
-    
+
+Then, we use `getopts` go parse our command line arguments for us:
+
     while getopts ":b:c:o:u:p:v" OPTION
     do
         case $OPTION in
